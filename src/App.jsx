@@ -1045,18 +1045,48 @@ function PrinterModal({ item, beheerders, onClose, onSave }) {
   const [beheerder, setBeheerder] = useState(item.beheerder || beheerders[0]?.naam || "");
   const [omschrijving, setOmschrijving] = useState(item.omschrijving || "");
   const [qzHost, setQzHost] = useState(item.qz_host || "");
+  const [zoeken, setZoeken] = useState(false);
+  const [gevonden, setGevonden] = useState(null); // null = nog niet gezocht, [] = niets gevonden, [..] = lijst
+  const [zoekFout, setZoekFout] = useState(null);
   const canSave = naam.trim() !== "" && beheerder.trim() !== "";
+
+  async function zoekPrinters() {
+    setZoeken(true);
+    setZoekFout(null);
+    try {
+      const lijst = await findLocalPrinters(qzHost.trim() || undefined);
+      setGevonden(lijst);
+      if (lijst.length === 0) setZoekFout("QZ Tray gevonden, maar geen printers op dit systeem. Controleer of er een printer geïnstalleerd staat in Windows.");
+    } catch (e) {
+      setGevonden(null);
+      setZoekFout(e.message || String(e));
+    }
+    setZoeken(false);
+  }
 
   return (
     <ModalShell title={isEdit ? "Printer bewerken" : "Nieuwe printer"} onClose={onClose}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6 }}>Printernaam (exact zoals in QZ Tray / Windows)</div>
-      <input value={naam} onChange={(e) => setNaam(e.target.value)} placeholder="bv. EPSON TM-T20III" style={inputStyle} />
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6, marginTop: 0 }}>QZ Tray netwerkadres (IP van de beheerder-PC)</div>
+      <input value={qzHost} onChange={(e) => setQzHost(e.target.value)} placeholder="leeg = dit toestel zelf, anders bv. 192.168.1.50" style={inputStyle} />
+      <div style={{ fontSize: 11.5, color: "#B8A99A", marginTop: 4 }}>Laat leeg als je dit instelt terwijl je op de PC met de printer zelf zit.</div>
+
+      <button onClick={zoekPrinters} disabled={zoeken} style={{ width: "100%", marginTop: 10, border: "1px solid #EEE4D8", background: "#FBF6EE", borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#6B1E2B", cursor: "pointer" }}>
+        {zoeken ? "Bezig met zoeken…" : "Printers zoeken via QZ Tray"}
+      </button>
+      {zoekFout && <div style={{ color: "#7A2530", fontSize: 12, marginTop: 8 }}>{zoekFout}</div>}
+      {gevonden && gevonden.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {gevonden.map((p) => (
+            <button key={p} onClick={() => setNaam(p)} style={{ border: naam === p ? "2px solid #6B1E2B" : "1px solid #EEE4D8", background: naam === p ? "#FBF1E4" : "#fff", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "#6B1E2B", cursor: "pointer" }}>{p}</button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6, marginTop: 14 }}>Printernaam</div>
+      <input value={naam} onChange={(e) => setNaam(e.target.value)} placeholder="Kies hierboven, of typ exact zoals in Windows" style={inputStyle} />
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6, marginTop: 12 }}>Beheerder</div>
       <input value={beheerder} onChange={(e) => setBeheerder(e.target.value)} list="beheerders-lijst" placeholder="bv. Rudi" style={inputStyle} />
       <datalist id="beheerders-lijst">{beheerders.map((b) => <option key={b.id} value={b.naam} />)}</datalist>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6, marginTop: 12 }}>QZ Tray netwerkadres (IP van de beheerder-PC)</div>
-      <input value={qzHost} onChange={(e) => setQzHost(e.target.value)} placeholder="leeg = dit toestel zelf, anders bv. 192.168.1.50" style={inputStyle} />
-      <div style={{ fontSize: 11.5, color: "#B8A99A", marginTop: 4 }}>Laat leeg als je dit instelt terwijl je op de PC met de printer zelf zit. Vul het IP-adres van die PC in als andere toestellen (bv. de iPads) hiernaar moeten printen.</div>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A7C6E", marginBottom: 6, marginTop: 12 }}>Omschrijving (optioneel)</div>
       <input value={omschrijving} onChange={(e) => setOmschrijving(e.target.value)} placeholder="bv. Bij de toog" style={{ ...inputStyle, marginBottom: 18 }} />
       <button onClick={() => canSave && onSave({ naam: naam.trim(), beheerder: beheerder.trim(), omschrijving: omschrijving.trim(), qz_host: qzHost.trim() })} disabled={!canSave} style={primaryBtnStyle(canSave)}>{isEdit ? "Wijzigingen opslaan" : "Printer toevoegen"}</button>
