@@ -140,9 +140,9 @@ function MainApp({ auth, onLogout }) {
     if (!catFilter && categories.length > 0) setCatFilter(categories[0]);
   }, [categories, catFilter]);
 
-  // Opnemer-rol mag enkel Tafels en Overzicht (items) zien
+  // Opnemer-rol mag enkel de Tafels-tab zien
   useEffect(() => {
-    if (!isBeheerder && !["tafels", "itemsoverzicht"].includes(tab)) setTab("tafels");
+    if (!isBeheerder && tab !== "tafels") setTab("tafels");
   }, [isBeheerder, tab]);
 
   const activeSession = sessions.find((s) => s.id === activeId) || null;
@@ -409,12 +409,17 @@ function MainApp({ auth, onLogout }) {
           onSubmitRound={submitRound}
           onBack={() => { setView("home"); setActiveId(null); }}
           onGoBill={() => setView("bill")}
+          onGoOverzicht={() => setView("tafeloverzicht")}
           onDelete={() => handleDeleteSession(activeSession.id)}
         />
       )}
 
       {view === "bill" && activeSession && (
         <BillScreen session={activeSession} items={activeItems} activePrinter={activePrinter} onBack={() => setView("order")} onAdjust={adjustBillLine} onFinalize={handleFinalize} />
+      )}
+
+      {view === "tafeloverzicht" && activeSession && (
+        <TableOverzichtScreen session={activeSession} items={activeItems} onBack={() => setView("order")} />
       )}
 
       {view === "detail" && historySession && (
@@ -438,7 +443,7 @@ function Shell({ children }) {
 }
 
 // ---------------------------------------------------------------------------
-const TAB_TITLES = { tafels: "Tafels", itemsoverzicht: "Overzicht", geschiedenis: "Geschiedenis", menu: "Menu beheren", gebruikers: "Gebruikers", printers: "Printers", overzicht: "Verkoopoverzicht" };
+const TAB_TITLES = { tafels: "Tafels", geschiedenis: "Geschiedenis", menu: "Menu beheren", gebruikers: "Gebruikers", printers: "Printers", overzicht: "Verkoopoverzicht" };
 const MORE_TABS = [
   { id: "geschiedenis", label: "Geschiedenis", icon: <ClipboardList size={18} /> },
   { id: "menu", label: "Menu", icon: <UtensilsCrossed size={18} /> },
@@ -507,7 +512,6 @@ function HomeShell(props) {
         </div>
       )}
 
-      {tab === "itemsoverzicht" && <ItemsOverzichtScreen sessions={sessions} itemsBySession={itemsBySession} />}
       {tab === "geschiedenis" && <HistoryList history={history} onOpen={onOpenHistory} />}
       {tab === "menu" && <MenuScreen menu={menu} categories={categories} onEdit={onEditMenuItem} onDelete={onDeleteMenuItem} />}
       {tab === "gebruikers" && <UsersScreen users={users} onEdit={onEditUser} onDelete={onDeleteUser} />}
@@ -660,31 +664,28 @@ function MenuScreen({ menu, categories, onEdit, onDelete }) {
   );
 }
 
-function ItemsOverzichtScreen({ sessions, itemsBySession }) {
+function TableOverzichtScreen({ session, items, onBack }) {
+  const lines = Object.values(db.aggregateItems(items)).filter((t) => t.qty !== 0);
   return (
-    <div style={{ padding: "8px 18px 100px" }}>
-      {sessions.length === 0 && <EmptyState icon={<ClipboardList size={30} color="#B8A99A" />} text="Nog geen open tafels." />}
-      {sessions.map((s) => {
-        const items = itemsBySession[s.id] || [];
-        const lines = Object.values(db.aggregateItems(items)).filter((t) => t.qty !== 0);
-        return (
-          <div key={s.id} style={{ background: "#fff", border: "1px solid #EEE4D8", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>Tafel {db.tafelLabel(s)} · {s.naam}</div>
-            {lines.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: "#B8A99A", marginTop: 6 }}>Nog niets besteld.</div>
-            ) : (
-              <div style={{ marginTop: 8 }}>
-                {lines.map((line) => (
-                  <div key={line.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5EEE3", fontSize: 13.5 }}>
-                    <span>{line.name}</span>
-                    <span style={{ fontWeight: 700 }}>{line.qty}x</span>
-                  </div>
-                ))}
-              </div>
-            )}
+    <div>
+      <div style={{ background: "#6B1E2B", padding: "16px 14px", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={onBack} style={iconBtnStyle("#8A2E3D")}><ArrowLeft size={18} color="#F4E4C8" /></button>
+          <div>
+            <div style={{ color: "#E8C88A", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Overzicht · Tafel {db.tafelLabel(session)}</div>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>{session.naam}</div>
           </div>
-        );
-      })}
+        </div>
+      </div>
+      <div style={{ padding: "14px 14px 40px" }}>
+        {lines.length === 0 && <EmptyState icon={<ClipboardList size={28} color="#B8A99A" />} text="Nog niets besteld." />}
+        {lines.map((line) => (
+          <div key={line.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F0E6D8", fontSize: 14.5 }}>
+            <span style={{ fontWeight: 700 }}>{line.name}</span>
+            <span style={{ fontWeight: 800 }}>{line.qty}x</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -719,14 +720,12 @@ function HistoryList({ history, onOpen }) {
 }
 
 function BottomNav({ tab, setTab, isBeheerder, moreOpen, setMoreOpen }) {
-  const meerActive = isBeheerder && !["tafels", "itemsoverzicht"].includes(tab);
   return (
     <>
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#fff", borderTop: "1px solid #EEE4D8", display: "flex", padding: "10px 18px calc(10px + env(safe-area-inset-bottom))" }}>
         <NavItem icon={<Users size={20} />} label="Tafels" active={tab === "tafels"} onClick={() => setTab("tafels")} />
-        <NavItem icon={<ClipboardList size={20} />} label="Overzicht" active={tab === "itemsoverzicht"} onClick={() => setTab("itemsoverzicht")} />
         {isBeheerder && (
-          <NavItem icon={<MoreHorizontal size={20} />} label="Meer" active={meerActive} onClick={() => setMoreOpen(true)} />
+          <NavItem icon={<MoreHorizontal size={20} />} label="Meer" active={tab !== "tafels"} onClick={() => setMoreOpen(true)} />
         )}
       </div>
       {moreOpen && (
@@ -777,7 +776,7 @@ function EmptyState({ icon, text }) {
 }
 
 // ---------------------------------------------------------------------------
-function OrderScreen({ session, items, menu, categories, cart, query, setQuery, catFilter, setCatFilter, onUpdateCart, onSubmitRound, onBack, onGoBill, onDelete }) {
+function OrderScreen({ session, items, menu, categories, cart, query, setQuery, catFilter, setCatFilter, onUpdateCart, onSubmitRound, onBack, onGoBill, onGoOverzicht, onDelete }) {
   const totals = db.aggregateItems(items);
   const cartCount = Object.values(cart).reduce((a, v) => a + v.qty, 0);
   const cartAmount = Object.values(cart).reduce((sum, v) => sum + v.price * v.qty, 0);
@@ -804,6 +803,7 @@ function OrderScreen({ session, items, menu, categories, cart, query, setQuery, 
             <div style={{ color: "#E8C88A", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Tafel {db.tafelLabel(session)}</div>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>{session.naam}</div>
           </div>
+          <button onClick={onGoOverzicht} style={iconBtnStyle("#8A2E3D")}><ClipboardList size={17} color="#F4E4C8" /></button>
           <button onClick={onDelete} style={iconBtnStyle("#8A2E3D")}><Trash2 size={17} color="#F4E4C8" /></button>
         </div>
         <div style={{ position: "relative", marginTop: 12 }}>

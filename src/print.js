@@ -1,12 +1,35 @@
 import qz from "qz-tray";
+import { KJUR, KEYUTIL, stob64, hextorstr } from "jsrsasign";
 import { CLUB_NAME, THANK_YOU_LINE, LOGO_DATA_URI } from "./branding";
+import { QZ_CERTIFICATE, QZ_PRIVATE_KEY } from "./qzSecurity";
 
 // A5-formaat voor beide tickets (kassabon en keukenticket)
 const A5 = { width: 148, height: 210, units: "mm" };
 
+let securityConfigured = false;
+function ensureSecurityConfigured() {
+  if (securityConfigured) return;
+  qz.security.setCertificatePromise((resolve) => resolve(QZ_CERTIFICATE));
+  qz.security.setSignatureAlgorithm("SHA512");
+  qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+    try {
+      const pk = KEYUTIL.getKey(QZ_PRIVATE_KEY);
+      const sig = new KJUR.crypto.Signature({ alg: "SHA512withRSA" });
+      sig.init(pk);
+      sig.updateString(toSign);
+      const hex = sig.sign();
+      resolve(stob64(hextorstr(hex)));
+    } catch (err) {
+      reject(err);
+    }
+  });
+  securityConfigured = true;
+}
+
 let connectedHost = undefined;
 
 async function ensureConnected(host) {
+  ensureSecurityConfigured();
   const targetHost = host || undefined; // undefined = localhost (default QZ-gedrag)
   if (qz.websocket.isActive() && connectedHost === targetHost) return;
   if (qz.websocket.isActive()) {

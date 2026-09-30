@@ -1,0 +1,69 @@
+// Certificaat + privésleutel voor het digitaal ondertekenen van QZ Tray-
+// printverzoeken. Hierdoor moet QZ Tray niet langer telkens om toestemming
+// vragen bij het printen ("Allow"/"Remember"): eenmaal de beheerder-PC dit
+// certificaat de eerste keer vertrouwt (en "Remember" aanvinkt), verschijnt
+// het venster niet meer terug.
+//
+// LET OP — bewuste beveiligingsafweging: de privésleutel staat hier in de
+// broncode, dus zichtbaar voor iedereen die de website-broncode bekijkt.
+// Dat is de eenvoudigste (en door QZ zelf gedocumenteerde) manier om dit
+// zonder een eigen server te doen. Het enige wat dit certificaat "beschermt"
+// is de printbevestiging zelf — niet de Supabase-data of iets gevoeligs.
+// Voor dit interne, kleinschalige gebruik (één eetfestijn) is dat een
+// aanvaardbare afweging. Wil je dit ooit harder afschermen, dan verschuif je
+// het ondertekenen naar een kleine serverfunctie (bv. een Netlify Function)
+// die de privésleutel geheim houdt.
+
+export const QZ_CERTIFICATE = `-----BEGIN CERTIFICATE-----
+MIIEBTCCAu2gAwIBAgIUCqdWg7BVKkXIc9i3b/JK22eMIFUwDQYJKoZIhvcNAQEL
+BQAwgZExCzAJBgNVBAYTAkJFMRcwFQYDVQQIDA5WbGFhbXMtQnJhYmFudDESMBAG
+A1UEBwwJTGVldXdlcmlrMSowKAYDVQQKDCFFZXRmZXN0aWpuIEpvZ2dpbmcgQ2x1
+YiBMZWV1d2VyaWsxDjAMBgNVBAsMBUthc3NhMRkwFwYDVQQDDBBlZXRmZXN0aWpu
+LWthc3NhMB4XDTI2MDkzMDIwNDU0NFoXDTM2MDkyNzIwNDU0NFowgZExCzAJBgNV
+BAYTAkJFMRcwFQYDVQQIDA5WbGFhbXMtQnJhYmFudDESMBAGA1UEBwwJTGVldXdl
+cmlrMSowKAYDVQQKDCFFZXRmZXN0aWpuIEpvZ2dpbmcgQ2x1YiBMZWV1d2VyaWsx
+DjAMBgNVBAsMBUthc3NhMRkwFwYDVQQDDBBlZXRmZXN0aWpuLWthc3NhMIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3P4/tN/8n3YGEjxqJVlVdZUbgNSK
+W7POhbPdeTSGXXT1n1wOYGSbxxWtnxc8I8ITI7sCQSbWrroxd1cjFv4N86jJRKwJ
+kLEsAjCrB2ZmL/NQ+gaTzZwY9A8Ai4T0B5TWQEy3CQlYN8R8FoW1uADhxcXfODgS
+xbuqGtWeMnnlV8+8SEti+qCHlJsyNtPCZAbtQFt9tG7ZO/IJnRB6hhspr+KevJrI
+M9H1ddzOk4VJjMxOCYOMY9H7gez0YYFm/gMMzoR80jUFBOotR3U5I575WqNZTO93
+H8eSdWTbYbLb287V+Mf4NL8i1Z8iQUq3O4bITOvevPW43g3ovvmKqPbKbQIDAQAB
+o1MwUTAdBgNVHQ4EFgQUmU5ysyLAx1UC4lXKgXiKj80i3PUwHwYDVR0jBBgwFoAU
+mU5ysyLAx1UC4lXKgXiKj80i3PUwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0B
+AQsFAAOCAQEAPAOsaT4iIoeYjyZUIrZGl5auGyhnBPpvb0ICf20Hz2yiGzlwJ45h
+NFnU8dAgfSLpO/8CTOex80HB/ps1tzS8vlEfdtHtABa3qptKXpDgmbFZb9xnqEgz
+CcKEHn2ffLOhu3I9I+dGvQ57aXXSY9r4hzBo1jpcKXgxTo63EMizhDFL4tMm4VAa
+/3uuwLJBKN62e2CaQisvTD4lXxsXC/ZhYlXcOLK0z2T+V7YqRzH9lvrpcgOyUVBA
+9mvBr5h4lKsuSyFkwvhBAtV7p5p+osF72iFwnkMhFXAUhcQwHu/JYXCkTCDsDskY
+862JYivNs17NfA7aD2BE99lpS1kbu4Wz7Q==
+-----END CERTIFICATE-----`;
+
+export const QZ_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEuwIBADANBgkqhkiG9w0BAQEFAASCBKUwggShAgEAAoIBAQDc/j+03/yfdgYS
+PGolWVV1lRuA1Ipbs86Fs915NIZddPWfXA5gZJvHFa2fFzwjwhMjuwJBJtauujF3
+VyMW/g3zqMlErAmQsSwCMKsHZmYv81D6BpPNnBj0DwCLhPQHlNZATLcJCVg3xHwW
+hbW4AOHFxd84OBLFu6oa1Z4yeeVXz7xIS2L6oIeUmzI208JkBu1AW320btk78gmd
+EHqGGymv4p68msgz0fV13M6ThUmMzE4Jg4xj0fuB7PRhgWb+AwzOhHzSNQUE6i1H
+dTkjnvlao1lM73cfx5J1ZNthstvbztX4x/g0vyLVnyJBSrc7hshM69689bjeDei+
++Yqo9sptAgMBAAECgf8hF0ZyzxdaHqd0vkHRVeR2DDMSF2v1pKGdY6bGKhdJ5zmK
++JMuhozM7XISCxNLnMPrlb/ArGV5Gb2jy73Ks5VjPDg8ZYZeeX5y1YFxROQIShGA
+tCYYTkduRCYmE20htX0KI8fvPSGjOB4HQVOfOdfqGrb8tBNw3ajwW7b/LUF/jv7l
+tJ0hMGHk+0+Vv2po2i6BNPnJEyacqSHdJkHaHu1B9mdcwny30OlgQq1wnhJrl5yv
+VKBPo/tXfH2cX9adrterMBJ+4AtCex4kBJI0SAGWrkzCa1n5N+5xr24GTu0FUY2g
+HpEJfi+y0g/LDc1pE+vZUBDc9k8640VovaLEKR0CgYEA/vdZn3fVzLFcct10R5aP
+2Ln90TGLMSu/njGXJLuZrNQUQgpuoMfJh3wL08WOnV2n9HGCSk7XIF8Zr7FJvqPA
+ZboVfkE47T7fKEm4Wjj0DA7zVkSCLs6nd28A+JZgORESN2IB5IHtVklfjX9QTjR3
+6mawmn6Y082IRPOvCMcKh/MCgYEA3eOiqeYOi5Ugb+DF4CbyBMjHiyu8AzLY26xg
+ChgeynhfF75v8QgPWuJn/wgZGQKjBWC8Zd3Fsy9IJN/d1ypB0UDA3RA5C74V2v8O
+7z4Eyowbm+sjFLgr3vKwakv1eIZSYtu+Hciu6m9DaJbpE4+mQFYy7npHtQiGvsAU
+x/UXXB8CgYBn2M07I28EWTUDX+mNguiB6HdV7iz4UQ5R23bpMjPMbfD2WRNoDxep
+RD/4+F03AT94U4cyxtveRn3KzpXvvPiPNnSsoNoT32i7GxOoQ8w64RgBihPQBsG0
+5pRpq63zcF2QCy4kKTtGysnNcw59W+d/pGXH90o98lfPZcVj+NX0OwKBgEUTQmZF
+ui115T0u6irXtOwMXSJUIRmV0LDCPruluqApTOElZc/RRIZ0iQ95w+ZnTby02rGT
+kqIvi/P+xR7ghtDPqbqn/DpNmJwuXsXXtsIfT9EAKFGg6/dh8c2FjAtTNX6VDeBT
+wzA0JvX+VNzEEWth6kUXSA9xchEb1txQzk7dAoGBAJDIeE0c03CMMFfESwA1XTeB
+QuX2s3Ztp+7N6RhewfJZqMUdMYfIkAfaUG5cKDGhcDOdjyCUl2v6ErQqe4x2nXyY
+yYppCkdkgBj5OC/ko7UrwTp2CafzqGb8fM+Mwou7bV0kTyQy5d95rwu4LALafZ33
+UyfABozWzqSMwvdwS/kd
+-----END PRIVATE KEY-----`;
