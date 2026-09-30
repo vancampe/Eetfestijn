@@ -22,7 +22,14 @@ async function sendToPrinter(activePrinter, html) {
     throw new Error("Geen printer geselecteerd. Ga naar de tab Printers en kies een actieve printer.");
   }
   await ensureConnected(activePrinter.qz_host);
-  const config = qz.configs.create(activePrinter.naam, { size: A5, units: "mm" });
+  const config = qz.configs.create(activePrinter.naam, {
+    size: A5,
+    units: "mm",
+    margins: 0,
+    orientation: "portrait",
+    scaleContent: true,
+    rasterize: true,
+  });
   await qz.print(config, [{ type: "pixel", format: "html", flavor: "plain", data: html }]);
 }
 
@@ -42,18 +49,24 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// Vaste, expliciete afmetingen (A5 = 148 x 210mm) zodat de inhoud niet
+// wordt uitgerekt of afgesneden ongeacht welk papierformaat de printer
+// zelf als standaard gebruikt.
 const BASE_STYLE = `
-  body { font-family: Arial, Helvetica, sans-serif; color:#111; padding: 14mm 12mm; }
-  h1 { font-size: 15px; margin: 0 0 2px; }
-  h2 { font-size: 13px; margin: 0 0 10px; font-weight: 700; }
-  .meta { font-size: 12px; margin-bottom: 4px; }
-  .logo { float: right; width: 26mm; }
-  table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 12.5px; }
-  th { text-align: left; border-bottom: 2px solid #111; padding: 4px 2px; }
-  td { padding: 4px 2px; border-bottom: 1px solid #ccc; }
-  .num { text-align: right; }
-  .total-row td { border-top: 2px solid #111; border-bottom: none; font-weight: 700; font-size: 14px; padding-top: 8px; }
-  .footer { margin-top: 18px; font-size: 12.5px; }
+  @page { size: 148mm 210mm; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { width: 148mm; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color:#111; padding: 8mm 7mm; font-size: 11px; }
+  h1 { font-size: 13px; margin: 0 22mm 2px 0; line-height: 1.25; }
+  h2 { font-size: 12px; margin: 0 0 8px; font-weight: 700; }
+  .meta { font-size: 10.5px; margin-bottom: 3px; }
+  .logo { float: right; width: 20mm; margin-top: -2mm; }
+  table { border-collapse: collapse; width: 100%; margin-top: 6px; font-size: 11px; table-layout: fixed; }
+  th { text-align: left; border-bottom: 2px solid #111; padding: 3px 2px; }
+  td { padding: 3px 2px; border-bottom: 1px solid #ccc; word-wrap: break-word; }
+  .num { text-align: right; white-space: nowrap; width: 16mm; }
+  .total-row td { border-top: 2px solid #111; border-bottom: none; font-weight: 700; font-size: 12.5px; padding-top: 6px; }
+  .footer { margin-top: 14px; font-size: 10.5px; }
 `;
 
 // ---------------------------------------------------------------------------

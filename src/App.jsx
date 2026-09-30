@@ -140,9 +140,9 @@ function MainApp({ auth, onLogout }) {
     if (!catFilter && categories.length > 0) setCatFilter(categories[0]);
   }, [categories, catFilter]);
 
-  // Opnemer-rol mag enkel de Tafels-tab zien
+  // Opnemer-rol mag enkel Tafels en Overzicht (items) zien
   useEffect(() => {
-    if (!isBeheerder && tab !== "tafels") setTab("tafels");
+    if (!isBeheerder && !["tafels", "itemsoverzicht"].includes(tab)) setTab("tafels");
   }, [isBeheerder, tab]);
 
   const activeSession = sessions.find((s) => s.id === activeId) || null;
@@ -438,13 +438,13 @@ function Shell({ children }) {
 }
 
 // ---------------------------------------------------------------------------
-const TAB_TITLES = { tafels: "Tafels", geschiedenis: "Geschiedenis", menu: "Menu beheren", gebruikers: "Gebruikers", printers: "Printers", overzicht: "Overzicht" };
+const TAB_TITLES = { tafels: "Tafels", itemsoverzicht: "Overzicht", geschiedenis: "Geschiedenis", menu: "Menu beheren", gebruikers: "Gebruikers", printers: "Printers", overzicht: "Verkoopoverzicht" };
 const MORE_TABS = [
   { id: "geschiedenis", label: "Geschiedenis", icon: <ClipboardList size={18} /> },
   { id: "menu", label: "Menu", icon: <UtensilsCrossed size={18} /> },
   { id: "gebruikers", label: "Beheer (gebruikers)", icon: <ShieldCheck size={18} /> },
   { id: "printers", label: "Printers", icon: <Printer size={18} /> },
-  { id: "overzicht", label: "Overzicht", icon: <FileSpreadsheet size={18} /> },
+  { id: "overzicht", label: "Verkoopoverzicht (export)", icon: <FileSpreadsheet size={18} /> },
 ];
 
 function HomeShell(props) {
@@ -507,6 +507,7 @@ function HomeShell(props) {
         </div>
       )}
 
+      {tab === "itemsoverzicht" && <ItemsOverzichtScreen sessions={sessions} itemsBySession={itemsBySession} />}
       {tab === "geschiedenis" && <HistoryList history={history} onOpen={onOpenHistory} />}
       {tab === "menu" && <MenuScreen menu={menu} categories={categories} onEdit={onEditMenuItem} onDelete={onDeleteMenuItem} />}
       {tab === "gebruikers" && <UsersScreen users={users} onEdit={onEditUser} onDelete={onDeleteUser} />}
@@ -659,6 +660,35 @@ function MenuScreen({ menu, categories, onEdit, onDelete }) {
   );
 }
 
+function ItemsOverzichtScreen({ sessions, itemsBySession }) {
+  return (
+    <div style={{ padding: "8px 18px 100px" }}>
+      {sessions.length === 0 && <EmptyState icon={<ClipboardList size={30} color="#B8A99A" />} text="Nog geen open tafels." />}
+      {sessions.map((s) => {
+        const items = itemsBySession[s.id] || [];
+        const lines = Object.values(db.aggregateItems(items)).filter((t) => t.qty !== 0);
+        return (
+          <div key={s.id} style={{ background: "#fff", border: "1px solid #EEE4D8", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
+            <div style={{ fontWeight: 800, fontSize: 15 }}>Tafel {db.tafelLabel(s)} · {s.naam}</div>
+            {lines.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: "#B8A99A", marginTop: 6 }}>Nog niets besteld.</div>
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                {lines.map((line) => (
+                  <div key={line.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #F5EEE3", fontSize: 13.5 }}>
+                    <span>{line.name}</span>
+                    <span style={{ fontWeight: 700 }}>{line.qty}x</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function HistoryList({ history, onOpen }) {
   const totalOmzet = history.reduce((a, s) => a + (s.total || 0), 0);
   const cash = history.filter((s) => s.payment_method === "Cash").reduce((a, s) => a + (s.total || 0), 0);
@@ -689,12 +719,14 @@ function HistoryList({ history, onOpen }) {
 }
 
 function BottomNav({ tab, setTab, isBeheerder, moreOpen, setMoreOpen }) {
+  const meerActive = isBeheerder && !["tafels", "itemsoverzicht"].includes(tab);
   return (
     <>
       <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#fff", borderTop: "1px solid #EEE4D8", display: "flex", padding: "10px 18px calc(10px + env(safe-area-inset-bottom))" }}>
         <NavItem icon={<Users size={20} />} label="Tafels" active={tab === "tafels"} onClick={() => setTab("tafels")} />
+        <NavItem icon={<ClipboardList size={20} />} label="Overzicht" active={tab === "itemsoverzicht"} onClick={() => setTab("itemsoverzicht")} />
         {isBeheerder && (
-          <NavItem icon={<MoreHorizontal size={20} />} label="Meer" active={tab !== "tafels"} onClick={() => setMoreOpen(true)} />
+          <NavItem icon={<MoreHorizontal size={20} />} label="Meer" active={meerActive} onClick={() => setMoreOpen(true)} />
         )}
       </div>
       {moreOpen && (
